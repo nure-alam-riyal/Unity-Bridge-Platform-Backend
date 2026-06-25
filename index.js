@@ -10,7 +10,11 @@ const app = express();
 const port = process.env.PORT || 5050;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin:['http://localhost:5173',
+          'https://unity-bridge-platform.vercel.app/'
+  ],
+}))
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -666,7 +670,7 @@ async function run() {
 
           if (!projectId || !email) {
             console.error("Tracking metadata lost in callback loop.");
-            return res.redirect(`http://localhost:5173/donor?status=invalid`);
+            return res.redirect(`https://unity-bridge-platform.vercel.app/donor?status=invalid`);
           }
 
           const donorReceipt = {
@@ -685,10 +689,10 @@ async function run() {
             }
           );
 
-          return res.redirect(`http://localhost:5173/donor?status=success&tran=${tranId}`);
+          return res.redirect(`https://unity-bridge-platform.vercel.app/donor?status=success&tran=${tranId}`);
         } else {
           console.log(`Validation flag rejected by gateway for transaction: ${tranId}`);
-          return res.redirect(`http://localhost:5173/donor?status=invalid`);
+          return res.redirect(`https://unity-bridge-platform.vercel.app/donor?status=invalid`);
         }
       } catch (error) {
         console.error("Critical success callback error:", error);
@@ -698,12 +702,12 @@ async function run() {
 
     // POST payment fail callback
     app.post('/payment/fail/:tranId', async (req, res) => {
-      res.redirect(`http://localhost:5173/donor?status=failed`);
+      res.redirect(`https://unity-bridge-platform.vercel.app/donor?status=failed`);
     });
 
     // POST payment cancel callback
     app.post('/payment/cancel/:tranId', async (req, res) => {
-      res.redirect(`http://localhost:5173/donor?status=cancelled`);
+      res.redirect(`https://unity-bridge-platform.vercel.app/donor?status=cancelled`);
     });
 
   } catch (err) {
