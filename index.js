@@ -13,6 +13,9 @@ const port = process.env.PORT || 5050;
 app.use(cors({
   origin: ['http://localhost:5173',
     'https://unity-bridge-platform.vercel.app/',
+    'https://unity-bridge-platform-1ghnietse-riyals-projects-32cf7dde.vercel.app/'
+    
+
     
   ],
 }))
@@ -62,6 +65,9 @@ async function run() {
       }
     });
 
+
+
+
     // GET single project by ID
     app.get('/projects/:id', async (req, res) => {
       try {
@@ -80,7 +86,7 @@ async function run() {
       }
     });
 
-    
+
     // POST register new user
     app.post('/users', async (req, res) => {
       try {
