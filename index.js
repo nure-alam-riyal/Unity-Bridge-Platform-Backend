@@ -12,9 +12,9 @@ const port = process.env.PORT || 5050;
 // Middleware
 app.use(cors({
   origin: [
-    'https://unity-bridge-platform.vercel.app/',
+    'https://unity-bridge-platform.vercel.app',
     'http://localhost:5173',
-    'https://unity-bridge-platform-1ghnietse-riyals-projects-32cf7dde.vercel.app/'
+    'https://unity-bridge-platform-1ghnietse-riyals-projects-32cf7dde.vercel.app'
     
 
 
