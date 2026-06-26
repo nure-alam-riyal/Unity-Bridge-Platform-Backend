@@ -12,7 +12,8 @@ const port = process.env.PORT || 5050;
 // Middleware
 app.use(cors({
   origin: ['http://localhost:5173',
-    'https://unity-bridge-platform.vercel.app/'
+    'https://unity-bridge-platform.vercel.app/',
+    
   ],
 }))
 app.use(express.json());
@@ -79,6 +80,7 @@ async function run() {
       }
     });
 
+    
     // POST register new user
     app.post('/users', async (req, res) => {
       try {
