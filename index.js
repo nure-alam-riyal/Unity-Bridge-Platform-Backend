@@ -11,8 +11,8 @@ const port = process.env.PORT || 5050;
 
 // Middleware
 app.use(cors({
-  origin:['http://localhost:5173',
-          'https://unity-bridge-platform.vercel.app/'
+  origin: ['http://localhost:5173',
+    'https://unity-bridge-platform.vercel.app/'
   ],
 }))
 app.use(express.json());
@@ -37,7 +37,7 @@ async function run() {
   try {
     await client.connect();
     console.log("MongoDB Connected ✅");
-    
+
     const userCollection = client.db("UnityBridgePlatform").collection("users");
     const projectCollection = client.db("UnityBridgePlatform").collection("projects");
 
@@ -50,7 +50,7 @@ async function run() {
         res.status(500).send({ error: error.message });
       }
     });
-    
+
     // GET all projects
     app.get('/projects', async (req, res) => {
       try {
@@ -147,9 +147,9 @@ async function run() {
           return res.status(404).json({ success: false, message: "Target user profile not found." });
         }
 
-        res.status(200).json({ 
-          success: true, 
-          message: `User verification status updated to: ${status}` 
+        res.status(200).json({
+          success: true,
+          message: `User verification status updated to: ${status}`
         });
       } catch (error) {
         console.error("Error validating user status:", error);
@@ -225,10 +225,10 @@ async function run() {
         });
       } catch (error) {
         console.error("Error on volunteerrequest route:", error);
-        res.status(500).json({ 
-          success: false, 
-          message: "Internal Server Error occurred while updating volunteer requests.", 
-          error: error.message 
+        res.status(500).json({
+          success: false,
+          message: "Internal Server Error occurred while updating volunteer requests.",
+          error: error.message
         });
       }
     });
@@ -240,9 +240,9 @@ async function run() {
         const { email, status } = req.body;
 
         if (!email || !status) {
-          return res.status(400).json({ 
-            success: false, 
-            message: "Email and status are required fields." 
+          return res.status(400).json({
+            success: false,
+            message: "Email and status are required fields."
           });
         }
 
@@ -264,23 +264,23 @@ async function run() {
 
         const result = await projectCollection.updateOne(query, updateDoc);
         if (result.matchedCount === 0) {
-          return res.status(404).json({ 
-            success: false, 
-            message: "Project matching ID or applicant email not found." 
+          return res.status(404).json({
+            success: false,
+            message: "Project matching ID or applicant email not found."
           });
         }
 
-        res.status(200).json({ 
-          success: true, 
+        res.status(200).json({
+          success: true,
           message: `Applicant status updated to '${status}'.`,
-          modifiedCount: result.modifiedCount 
+          modifiedCount: result.modifiedCount
         });
       } catch (error) {
         console.error("Error on applicant-status route:", error);
-        res.status(500).json({ 
-          success: false, 
-          message: "Internal Server Error", 
-          error: error.message 
+        res.status(500).json({
+          success: false,
+          message: "Internal Server Error",
+          error: error.message
         });
       }
     });
@@ -313,9 +313,9 @@ async function run() {
           return res.status(404).json({ success: false, message: "Target project proposal not found." });
         }
 
-        res.status(200).json({ 
-          success: true, 
-          message: `Project status updated to: ${status}` 
+        res.status(200).json({
+          success: true,
+          message: `Project status updated to: ${status}`
         });
       } catch (error) {
         console.error("Project verification error:", error);
@@ -329,9 +329,9 @@ async function run() {
       const { email, role, status } = req.body;
 
       if (!email || !role || !status) {
-        return res.status(400).json({ 
-          success: false, 
-          message: "Missing required fields: email, role, or status." 
+        return res.status(400).json({
+          success: false,
+          message: "Missing required fields: email, role, or status."
         });
       }
 
@@ -350,9 +350,9 @@ async function run() {
           updateQuery = { "donorDetails.$[elem].status": status };
           arrayFilters = [{ "elem.email": email }];
         } else {
-          return res.status(400).json({ 
-            success: false, 
-            message: "Invalid role specified. Must be 'volunteer&donor' or 'donor'." 
+          return res.status(400).json({
+            success: false,
+            message: "Invalid role specified. Must be 'volunteer&donor' or 'donor'."
           });
         }
 
@@ -363,9 +363,9 @@ async function run() {
         );
 
         if (result.matchedCount === 0) {
-          return res.status(404).json({ 
-            success: false, 
-            message: "Target project document could not be located." 
+          return res.status(404).json({
+            success: false,
+            message: "Target project document could not be located."
           });
         }
 
@@ -375,24 +375,24 @@ async function run() {
 
 
 
-        
+
         if (result.modifiedCount === 0) {
-          return res.status(200).json({ 
-            success: true, 
-            message: "No changes made. Status was already set to this state." 
+          return res.status(200).json({
+            success: true,
+            message: "No changes made. Status was already set to this state."
           });
         }
 
-        return res.status(200).json({ 
-          success: true, 
-          message: `Contributor status updated to ${status}.` 
+        return res.status(200).json({
+          success: true,
+          message: `Contributor status updated to ${status}.`
         });
       } catch (error) {
         console.error("Contributor status update error:", error);
-        return res.status(500).json({ 
-          success: false, 
-          message: "Internal server error updating contributor status.", 
-          error: error.message 
+        return res.status(500).json({
+          success: false,
+          message: "Internal server error updating contributor status.",
+          error: error.message
         });
       }
     });
@@ -478,7 +478,7 @@ async function run() {
         ]).toArray();
 
         const monthMap = { "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr", "05": "May", "06": "Jun", "07": "Jul", "08": "Aug", "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dec" };
-        
+
         const trends = trendsAggregation.map(item => ({
           month: monthMap[item._id] || 'Active',
           donations: item.totalBudget,
@@ -503,7 +503,7 @@ async function run() {
         const verifiedFilter = email ? { ngoEmail: email, status: 'verified' } : { status: 'verified' };
 
         const runningProjects = await projectCollection.countDocuments(verifiedFilter);
-        
+
         const totalVolunteersAggregation = await projectCollection.aggregate([
           { $match: projectFilter },
           { $project: { count: { $size: { $ifNull: ["$volunteerDetails", []] } } } },
@@ -533,7 +533,7 @@ async function run() {
             totalDonations,
             activeVolunteers,
             runningProjects,
-            impactReached: activeVolunteers * 3 
+            impactReached: activeVolunteers * 3
           },
           chartData: chartData.length > 0 ? chartData : [{ month: 'None', donations: 0, reached: 0 }],
           recentProjects: recentProjectsList.map(p => ({
@@ -621,16 +621,20 @@ async function run() {
           return res.status(400).json({ success: false, message: "Missing required parameters." });
         }
 
-        const tran_id = new ObjectId().toString(); 
+        const tran_id = new ObjectId().toString();
 
         const paymentData = {
           total_amount: Number(amount),
           currency: 'BDT',
           tran_id: tran_id,
-          success_url: `http://localhost:5050/payment/success/${tran_id}`,
-          fail_url: `http://localhost:5050/payment/fail/${tran_id}`,
-          cancel_url: `http://localhost:5050/payment/cancel/${tran_id}`,
-          ipn_url: `http://localhost:5050/payment/ipn`,
+          success_url: `https://unity-bridge-platform-backend.vercel.app/payment/success/${tran_id}`,
+          fail_url: `https://unity-bridge-platform-backend.vercel.app/payment/fail/${tran_id}`,
+          cancel_url: `https://unity-bridge-platform-backend.vercel.app/payment/cancel/${tran_id}`,
+          ipn_url: `https://unity-bridge-platform-backend.vercel.app/payment/ipn`,
+          // success_url: `http://localhost:5050/payment/success/${tran_id}`,
+          // fail_url: `http://localhost:5050/payment/fail/${tran_id}`,
+          // cancel_url: `http://localhost:5050/payment/cancel/${tran_id}`,
+          // ipn_url: `http://localhost:5050/payment/ipn`,
           shipping_method: 'No',
           product_name: 'Project Development Aid',
           product_category: 'Charity',
@@ -640,7 +644,7 @@ async function run() {
           cus_add1: 'Savar, Dhaka',
           cus_city: 'Dhaka',
           cus_country: 'Bangladesh',
-          cus_phone: '01711111111', 
+          cus_phone: '01711111111',
           ship_name: 'N/A',
           ship_add1: 'N/A',
           ship_city: 'N/A',
@@ -690,7 +694,7 @@ async function run() {
 
           await projectCollection.updateOne(
             { _id: new ObjectId(projectId) },
-            { 
+            {
               $push: { donorDetails: donorReceipt },
               $set: { lastUpdated: new Date() }
             }
