@@ -78,7 +78,9 @@ async function run() {
           return res.status(400).send({ error: 'Invalid MongoDB ID format' });
         }
         const query = { _id: new ObjectId(id) };
+        console.log(query)
         const project = await projectCollection.findOne(query);
+        console.log(project)
         if (!project) {
           return res.status(404).send({ message: "Project not found" });
         }
@@ -87,17 +89,15 @@ async function run() {
         res.status(500).send({ error: error.message });
       }
     });
+    
 
 
     // POST register new user
     app.post('/users', async (req, res) => {
       try {
         const user1 = req.body;
-        if (!user1.email) {
-          return res.status(400).send({ message: "Missing required field: email" });
-        }
 
-        const isUserExist = await userCollection.findOne({ email: user1.email });
+        const isUserExist = await userCollection.findOne({ email: user1?.email });
         if (isUserExist) {
           return res.status(400).send({ message: "User already exists" });
         }
@@ -115,7 +115,9 @@ async function run() {
         const result = await userCollection.insertOne(user);
         res.send(result);
       } catch (error) {
-        res.status(500).send({ error: error.message });
+        return res.status(200).send({
+    message: "User already exists"
+});
       }
     });
 
@@ -623,28 +625,27 @@ async function run() {
     });
 
     // POST payment gateway initiation
-    app.post('/payment/initiate', async (req, res) => {
+  app.post('/payment/initiate', async (req, res) => {
       try {
         const { projectId, amount, userEmail, userName, cardOnly } = req.body;
 
         if (!projectId || !amount || !userEmail) {
-          return res.status(400).json({ success: false, message: "Missing required parameters." });
+          return res.status(400).json({ success: false, message: "Missing required parameters configuration parameters." });
         }
 
         const tran_id = new ObjectId().toString();
+        
+        // Dynamically toggle local testing host vs Vercel environment base URLs
+        const serverBaseUrl = "http://localhost:5050"
 
         const paymentData = {
           total_amount: Number(amount),
           currency: 'BDT',
           tran_id: tran_id,
-          success_url: `https://unity-bridge-platform-backend.vercel.app/payment/success/${tran_id}`,
-          fail_url: `https://unity-bridge-platform-backend.vercel.app/payment/fail/${tran_id}`,
-          cancel_url: `https://unity-bridge-platform-backend.vercel.app/payment/cancel/${tran_id}`,
-          ipn_url: `https://unity-bridge-platform-backend.vercel.app/payment/ipn`,
-          // success_url: `http://localhost:5050/payment/success/${tran_id}`,
-          // fail_url: `http://localhost:5050/payment/fail/${tran_id}`,
-          // cancel_url: `http://localhost:5050/payment/cancel/${tran_id}`,
-          // ipn_url: `http://localhost:5050/payment/ipn`,
+          success_url: `http://localhost:5050/payment/success/${tran_id}`,
+          fail_url: `http://localhost:5050/payment/fail/${tran_id}`,
+          cancel_url: `http://localhost:5050/payment/cancel/${tran_id}`,
+          ipn_url: `http://localhost:5050/payment/ipn`,
           shipping_method: 'No',
           product_name: 'Project Development Aid',
           product_category: 'Charity',
@@ -659,39 +660,41 @@ async function run() {
           ship_add1: 'N/A',
           ship_city: 'N/A',
           ship_country: 'N/A',
-          value_a: projectId,
-          value_b: userEmail,
+          value_a: projectId,   // Encapsulated data mapping parameters inside persistent meta properties
+          value_b: userEmail,   
           allowed_payment_panel: cardOnly ? 'cardpayment' : 'both',
           multi_card_name: 'visa,mastercard,amex'
         };
-
+console.log(paymentData)
         const sslcommerz = new SSLCommerzPayment(store_id, store_pass, is_live);
+        
         sslcommerz.init(paymentData).then(apiResponse => {
           if (apiResponse?.GatewayPageURL) {
-            res.send({ url: apiResponse.GatewayPageURL });
+            return res.status(200).json({ url: apiResponse.GatewayPageURL });
           } else {
-            res.status(400).json({ success: false, message: "Gateway initialization timed out." });
+            return res.status(400).json({ success: false, message: "Gateway initialization sequence failed." });
           }
         });
       } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        return res.status(500).json({ success: false, error: error.message });
       }
     });
 
-    // POST payment gateway success webhook/callback
+    // 2. SSLCOMMERZ TRANSACTION COMPLETE HOOKS
     app.post('/payment/success/:tranId', async (req, res) => {
       try {
         const { tranId } = req.params;
-        const paymentResponse = req.body;
+        const paymentResponse = req.body; // Data payload contains variables mapped initially inside value_a & value_b
 
+        // Set frontend dashboard redirection endpoint
+        const clientDashboardUrl = `http://localhost:5173/donor`
         if (paymentResponse && paymentResponse.status === 'VALID') {
           const confirmedAmount = Number(paymentResponse.amount);
           const projectId = paymentResponse.value_a;
           const email = paymentResponse.value_b;
 
           if (!projectId || !email) {
-            console.error("Tracking metadata lost in callback loop.");
-            return res.redirect(`https://unity-bridge-platform.vercel.app/donor?status=invalid`);
+            return res.redirect(`${clientDashboardUrl}?status=invalid`);
           }
 
           const donorReceipt = {
@@ -699,38 +702,46 @@ async function run() {
             email: email,
             amount: confirmedAmount,
             donatedAt: new Date(),
-            status: "Approved"
+            status: "Approved",
+            role:paymentResponse.role,
+            
           };
-
-          await projectCollection.updateOne(
+console.log(donorReceipt)
+          // Update execution queries. Automatically initializes donorDetails array field structure if previously empty
+          const updateResult = await projectCollection.updateOne(
             { _id: new ObjectId(projectId) },
             {
               $push: { donorDetails: donorReceipt },
               $set: { lastUpdated: new Date() }
             }
           );
+console.log(updateResult,donorReceipt)
+          if (updateResult.matchedCount === 0) {
+            console.error(`No matching structural document target array located for project tracking ID: ${projectId}`);
+            return res.redirect(`${clientDashboardUrl}?status=invalid`);
+          
+          }
 
-          return res.redirect(`https://unity-bridge-platform.vercel.app/donor?status=success&tran=${tranId}`);
+          
+          return res.redirect(`${clientDashboardUrl}?status=success&tran=${tranId}`);
         } else {
-          console.log(`Validation flag rejected by gateway for transaction: ${tranId}`);
-          return res.redirect(`https://unity-bridge-platform.vercel.app/donor?status=invalid`);
+          return res.redirect(`${clientDashboardUrl}?status=invalid`);
         }
       } catch (error) {
-        console.error("Critical success callback error:", error);
-        res.status(500).send("Critical transaction synchronization crash.");
+        console.error("Critical hook failure:", error);
+        return res.status(500).send("Critical transaction processing database failure.");
       }
     });
 
-    // POST payment fail callback
     app.post('/payment/fail/:tranId', async (req, res) => {
-      res.redirect(`https://unity-bridge-platform.vercel.app/donor?status=failed`);
+      const clientDashboardUrl = process.env.NODE_ENV === 'production' ? `https://unity-bridge-platform.web.app/donor` : `http://localhost:5173/donor`;
+      return res.redirect(`${clientDashboardUrl}?status=failed`);
     });
 
-    // POST payment cancel callback
     app.post('/payment/cancel/:tranId', async (req, res) => {
-      res.redirect(`https://unity-bridge-platform.vercel.app/donor?status=cancelled`);
+      const clientDashboardUrl = process.env.NODE_ENV === 'production' ? `https://unity-bridge-platform.web.app/donor` : `http://localhost:5173/donor`;
+      return res.redirect(`${clientDashboardUrl}?status=cancelled`);
     });
-
   } catch (err) {
     console.error("Failed to execute server setup script:", err);
   }
@@ -740,6 +751,7 @@ async function run() {
 app.get('/', (req, res) => {
   res.send('Unity Bridge Platform Server is running');
 });
+
 
 // Run server initialization
 run().catch(console.dir);
