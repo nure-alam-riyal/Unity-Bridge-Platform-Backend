@@ -636,7 +636,7 @@ async function run() {
         const tran_id = new ObjectId().toString();
         
         // Dynamically toggle local testing host vs Vercel environment base URLs
-        const serverBaseUrl = "http://localhost:5050"
+        const serverBaseUrl = "https://unity-bridge-platform-backend.vercel.app"
 
         const paymentData = {
           total_amount: Number(amount),
@@ -687,7 +687,7 @@ console.log(paymentData)
         const paymentResponse = req.body; // Data payload contains variables mapped initially inside value_a & value_b
 
         // Set frontend dashboard redirection endpoint
-        const clientDashboardUrl = `http://localhost:5173/donor`
+        const clientDashboardUrl = `https://unity-bridge-platform.vercel.app/donor`
         if (paymentResponse && paymentResponse.status === 'VALID') {
           const confirmedAmount = Number(paymentResponse.amount);
           const projectId = paymentResponse.value_a;
